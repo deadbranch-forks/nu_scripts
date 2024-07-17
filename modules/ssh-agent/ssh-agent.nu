@@ -1,6 +1,6 @@
 do --env {
     let ssh_agent_file = (
-        $env.HOMEDRIVE | path join $env.HOMEPATH | path join ".ssh" | path join "agent.env"
+        $env.HOMEDRIVE | path join $env.HOMEPATH '.ssh' 'agent.env'
     )
 
     def --env load_agent_envs [file] {
