@@ -17,8 +17,7 @@ do --env {
     let agent_run_state = do { ^ssh-add -l | complete } | get exit_code
     if $agent_run_state == 0 { 
         print "ssh-agent: active with authenticated identity." | return
-    }
-    elseif $agent_run_state == 1 {
+    } else if $agent_run_state == 1 {
         print "ssh-agent: active and waiting for user to authenticate." | return        
     }
 
