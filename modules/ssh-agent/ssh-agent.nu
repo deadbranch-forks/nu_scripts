@@ -1,9 +1,13 @@
 do --env {
 
+    # Note: $env.MSYS_PATH is defined in env.nu
+
     # Common practice with bash is to export ssh-agent environmental variables to ~.ssh/
     let ssh_agent_file = $env.HOMEDRIVE | path join $env.HOMEPATH '.ssh' 'agent.env'
     if not ($ssh_agent_file | path exists) {
-        run-external 'ssh-agent' | save --force $ssh_agent_file
+        run-external ( $env.MSYS_PATH | path join 'ssh-agent') | save --force $ssh_agent_file
+        # Fix: calling `ssh-agent` directly returns `Error: nu::shell::io_error`.
+        # Using an absolute path resolves this issue.
     }
 
     let current_ssh_auth_sock = open ($ssh_agent_file)
@@ -20,6 +24,7 @@ do --env {
         return
     } 
     if $agent_run_state == 1 {
+        # The agent has no identies.
         print "ssh-agent: active and waiting for user to authenticate."
         return        
     }
