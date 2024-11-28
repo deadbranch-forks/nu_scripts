@@ -1,7 +1,70 @@
-export def main [] {
-    $in
+
+export def "into wav" [conversion_parameters?: record<sample_rate: int>]: string -> string {
+
+    ## File operations
+    ##
+    let file: string = $in 
+    let file_info: record = get-audio-info $file | first
+
+    let input_file: record  = $file
+        | path parse
+        | insert filepath { ( $file | path expand ) }
+
+    let output_filepath = $input_file.parent 
+        | path join ( $input_file.stem | append ".wav" | str join )
+
+
+    ## Sample rate operations
+    ##    
+    let parameter_record = (
+        if ($conversion_parameters | is-empty ) { 
+            { sample_rate: 16000 }
+         }
+        else { 
+            ($conversion_parameters | default 16000 sample_rate) 
+            }
+        )
+    let sample_rate: int = prevent-upsampling {
+        # Use prevent-upsampling to prevent upsampling the output file if the
+        # input file has a sample rate lower than the max desired.
+        max-rate: ( $parameter_record.sample_rate | into int ), 
+        input: ( $file_info.sample_rate | into int )
+        }
+
+
+    ## Conversion operations
+    ##
+    # Run ffmpeg and then output the filename so it can be part of the next pipe input.
+    let conversion_result = if not ($input_file.filepath | path exists) {
+        do { 
+        ^ffmpeg -ar $sample_rate -ac 1 $output_filepath -i $input_file.filepath
+        | complete 
+        }
+    }
+
+    if ($output_filepath | path exists) {
+        $output_filepath
+    }
 }
-export def "convert-file into transcript" [whisper_options?: record]: {
+
+
+def get-audio-info [filepath] {
+    ^ffprobe -v quiet -print_format json -show_streams $filepath
+        | from json
+        | get streams
+        | where codec_type == audio
+        | select codec_name sample_fmt sample_rate channels duration tags
+}
+
+def prevent-upsampling [sample_rates: record<max-rate: int, input: int>] {
+    if ($sample_rates.input > $sample_rates.max-rate) {
+        $sample_rates.max-rate
+    } else {
+        $sample_rates.input
+    }
+}
+
+export def "into transcript" [whisper_options?: record]: {
 
     let pipe_input: string = $in
 
@@ -110,82 +173,3 @@ export def "convert-file into transcript" [whisper_options?: record]: {
 
     }
     
-
-export def "convert-file into wav" [conversion_parameters?: record<sample_rate: int>]: string -> string {
-
-    ## File operations
-    ##
-    let file: string = $in 
-    let file_info: record = get-audio-info $file | first
-
-    let input_file: record  = $file
-        | path parse
-        | insert filepath { ( $file | path expand ) }
-
-    let output_filepath = $input_file.parent 
-        | path join ( $input_file.stem | append ".wav" | str join )
-
-
-    ## Sample rate operations
-    ##    
-    let parameter_record = (
-        if ($conversion_parameters | is-empty ) { 
-            { sample_rate: 16000 }
-         }
-        else { 
-            ($conversion_parameters | default 16000 sample_rate) 
-            }
-        )
-    let sample_rate: int = prevent-upsampling {
-        # Use prevent-upsampling to prevent upsampling the output file if the
-        # input file has a sample rate lower than the max desired.
-        max-rate: ( $parameter_record.sample_rate | into int ), 
-        input: ( $file_info.sample_rate | into int )
-        }
-
-
-    ## Conversion operations
-    ##
-    # Run ffmpeg and then output the filename so it can be part of the next pipe input.
-    let conversion_result = if not ($input_file.filepath | path exists) {
-        do { 
-        ^ffmpeg -ar $sample_rate -ac 1 $output_filepath -i $input_file.filepath
-        | complete 
-        }
-    }
-
-    if ($output_filepath | path exists) {
-        $output_filepath
-    }
-}
-
-
-def get-audio-info [filepath] {
-    ^ffprobe -v quiet -print_format json -show_streams $filepath
-        | from json
-        | get streams
-        | where codec_type == audio
-        | select codec_name sample_fmt sample_rate channels duration tags
-}
-
-def prevent-upsampling [sample_rates: record<max-rate: int, input: int>] {
-    if ($sample_rates.input > $sample_rates.max-rate) {
-        $sample_rates.max-rate
-    } else {
-        $sample_rates.input
-    }
-}
-
-
-
-# def sampleRateOrDefault [defaultSampleRate: int, sampleRate: int] {
-#     if ($sampleRate > $defaultSampleRate) {
-#         $defaultSampleRate
-#     } else {
-#         $sampleRate
-#     }
-# }
-
-# export def to-wav [filepath: string] {
-
-# }
