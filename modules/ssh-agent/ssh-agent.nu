@@ -20,12 +20,12 @@ do --env {
     # file socket path is valid, or if it has an authenticated key (no further action needed)
     let agent_run_state = do { ^ssh-add -l | complete } | get exit_code
     if $agent_run_state == 0 { 
-        $env.SSH_AGENT_STATUS = 'ssh-agent: active with authenticated identity. (0)'
+        $env.SSH_AGENT_STATUS = 'active with authenticated identity. (0)'
         return
     } 
     if $agent_run_state == 1 {
         # The agent has no identies.
-        $env.SSH_AGENT_STATUS = 'ssh-agent: active and waiting for user to authenticate. (1)'
+        $env.SSH_AGENT_STATUS = 'active and waiting for user to authenticate. (1)'
         return        
     }
 
@@ -40,7 +40,7 @@ do --env {
             | first 1
             | parse "SSH_AUTH_SOCK={SSH_AUTH_SOCK}; export SSH_AUTH_SOCK;" 
         load-env $new_auth_socket.0
-        $env.SSH_AGENT_STATUS = 'ssh-agent: now active and waiting for user to authenticate. (2)'
+        $env.SSH_AGENT_STATUS = 'now active and waiting for user to authenticate. (2)'
     }
 
 }
