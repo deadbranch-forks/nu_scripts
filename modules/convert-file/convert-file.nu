@@ -20,7 +20,7 @@ export def "media info from ls" []: table<name: string> -> table<name: string, a
             | from json
             | get streams
         )
-        log debug $"file_info is ($file_info | describe)"
+        #log debug $"file_info is ($file_info | describe)"
 
         $row
         | update media_type ($file_info | first | get codec_type)
@@ -91,12 +91,11 @@ export def "into mp3" [
             'pipe:'
         ]
 
-        let final_command: list<any> = [
-            $display_options $input_options $output_options
-        ] 
-        | flatten
-        # log info $"\nfinal command: ($final_command | describe)"
-        # print $"|DEBUG| Constructed command: ($final_command)"
+        let final_command: list<any> = (
+            [ $display_options $input_options $output_options ] | flatten
+        )
+        #log info $"\nfinal command: ($final_command | describe)"
+        #log debug $"|DEBUG| Constructed command: ($final_command)"
 
         $file 
         | update $column_name (
@@ -104,7 +103,7 @@ export def "into mp3" [
             | ^ffmpeg ...$final_command
             | into binary
         )
-        # print $"|INFO| File converted. Generated wav data for ($file.name)."
+        #log info $"|INFO| File converted. Generated data for ($file.name)."
     }  
 }
 
@@ -140,19 +139,21 @@ export def "into wav" []: table<name: string> -> table<wav: binary> {
             'pipe:'
         ]
 
-        let final_command: list = [
-            $display_options $input_options $video_flags $output_options
-        ]
-        | flatten
-        # print $"|DEBUG| Constructed command: ($final_command)"
+        let final_command: list = (
+            [ $display_options $input_options $video_flags $output_options ]
+            | flatten
+        )
+        #log debug $"|DEBUG| Constructed command: (...$final_command)" FUCKS
 
         $file 
         | update wav (
-            open $file.name
-            | (^ffmpeg ...$final_command)
-            | into binary
+            try {
+                open $file.name
+                | (^ffmpeg ...$final_command)
+                | into binary
+            } catch {|err| null }
         )
-        # print $"|INFO| File converted. Generated wav data for ($file.name)."
+        #log info $"|INFO| File converted. Generated wav data for ($file.name)."
     }   
 } 
 
@@ -187,10 +188,10 @@ export def "to file" []: table -> list<string> {
     )
 
         if ($output_file | path exists) {
-            log info $"File exists. Skipped saving ($output_file)."
+            #log info $"File exists. Skipped saving ($output_file)."
         }
         if (not ( $output_file | path exists )) {
-            log debug $"File saved. Data written to file ($output_file)"
+            #log debug $"File saved. Data written to file ($output_file)"
 
             $file 
             | if ($is_transcript == true) { 
@@ -215,7 +216,7 @@ export def "into transcript" []: table<wav: binary> -> table<timestamps: record,
     #  - Allow the user to 
     let selected_profile = 'windows'
     let device_profiles = [[device, model_filepath, threads];
-        ['windows' 'F:/M/models-speech-to-text/ggml-large-v3-turbo-q5_0.bin' '10']
+        ['windows' 'F:/M/models-speech-to-text/whisper-large-v3-turbo-q5_0-GGML/ggml-large-v3-turbo-q5_0.bin' '10']
         ['linux' '~/M/models-ggml.bin' '2']
     ]
     let device_setting = $device_profiles | where device == $selected_profile
@@ -229,10 +230,8 @@ export def "into transcript" []: table<wav: binary> -> table<timestamps: record,
     # TODO Put the files in the system tmp folderpath instead? with -t
     let file_list = ($in 
         | reject wav     
-        # | insert wav_filepath { (mktemp -t XXXXXX.wav) }
         | insert wav_filepath { (mktemp XXXXXX.wav) }
         | insert transcript_filepath { (mktemp XXXXXXX.json) }
-        # | insert transcript_filepath { (mktemp -t XXXXXXX.json) }
         | insert transcript null
     )
     
@@ -262,17 +261,16 @@ export def "into transcript" []: table<wav: binary> -> table<timestamps: record,
             '-m' $setting.model_filepath
             '--output-json'
             '--output-file' $output_filepath
-            '-d' '10000'
             '-f' ($file | get wav_filepath)
         ] | flatten
 
         do {
-            log debug $"whisper arguments: ($whisper_arguments | str join ' ')"
+            #log debug $"whisper arguments: ($whisper_arguments | str join ' ')"
             ^whisper ...$whisper_arguments
             | complete
         }
         | if ($in.exit_code == 0) {
-            log debug $"transcript filepath: ($file | get transcript_filepath)"
+            #log debug $"transcript filepath: ($file | get transcript_filepath)"
 
             open --raw ($file | get transcript_filepath)
             | from json
@@ -285,10 +283,10 @@ export def "into transcript" []: table<wav: binary> -> table<timestamps: record,
 def cleanup-temporary-files [column_names: list] {
     $in | each {|row|
         rm ($row | get transcript_filepath)
-        log debug $"Deleted: ($row | get transcript_filepath)"
+        #log debug $"Deleted: ($row | get transcript_filepath)"
 
         rm ($row | get wav_filepath)
-        log debug $"Deleted: ($row | get wav_filepath)"
+        #log debug $"Deleted: ($row | get wav_filepath)"
         }
     $in
 }
