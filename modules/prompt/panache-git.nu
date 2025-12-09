@@ -6,11 +6,13 @@
 # - In your Nushell config:
 #   - Import the main command from the panache-git.nu module file
 #   - Set panache-git as your prompt command
-#   - Disable the separate prompt indicator by setting it to an empty string
+#   - (optional) Reset the text color for your prompt indicator
 # - For example, with this file in your home directory:
 #     use ~/panache-git.nu main
 #     $env.PROMPT_COMMAND = {|| panache-git }
-#     $env.PROMPT_INDICATOR = {|| "" }
+#     $env.PROMPT_INDICATOR = {|| $"(ansi reset)> "}
+#     $env.PROMPT_INDICATOR_VI_INSERT = {|| $"(ansi reset): " }
+#     $env.PROMPT_INDICATOR_VI_NORMAL = {|| $"(ansi reset)> " }
 # - Restart Nushell
 #
 # For more documentation or to file an issue, see https://github.com/ehdevries/panache-git
@@ -19,7 +21,7 @@
 # An opinionated Git prompt for Nushell, styled after posh-git
 export def main [] {
   let prompt = ($'(current-dir) (repo-styled)' | str trim)
-  $'($prompt)> '
+  $prompt
 }
 
 # Get the current directory with home abbreviated
@@ -27,7 +29,7 @@ export def current-dir [] {
   let current_dir = ($env.PWD)
 
   let current_dir_relative_to_home = (
-    do --ignore-errors { $current_dir | path relative-to $nu.home-path } | str join
+    do --ignore-errors { $current_dir | path relative-to $nu.home-path }
   )
 
   let in_sub_dir_of_home = ($current_dir_relative_to_home | is-not-empty)
@@ -157,8 +159,8 @@ export def repo-structured [] {
   let staging_worktree_table = (if $has_staging_or_worktree_changes {
     $status
     | where ($it | str starts-with '1') or ($it | str starts-with '2')
-    | split column ' '
-    | get column2
+    | split column ' ' col1 sw
+    | get sw
     | split column '' staging worktree --collapse-empty
   } else {
     [[]]

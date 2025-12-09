@@ -1,28 +1,28 @@
 # Python versions
 #
 # Used by the add command to specify for which Python version the dependency must be installed
-def "nu-complete poetry python-versions" [] nothing -> list<string> {
+def "nu-complete poetry python-versions" []: nothing -> list<string> {
     ["3.8" "3.9" "3.10" "3.11" "3.12" "3.13"]
 }
 
 # Default package source names
 #
 # The default package source names available to install packages from
-def "nu-complete poetry default-package-source-names" [] nothing -> list<string> {
+def "nu-complete poetry default-package-source-names" []: nothing -> list<string> {
     [pypi test test.pypi.org internal-pypi]
 }
 
 # Default package source urls
 #
 # The default package source urls available to install packages from
-def "nu-complete poetry default-package-source-urls" [] nothing -> list<string> {
+def "nu-complete poetry default-package-source-urls" []: nothing -> list<string> {
     ["https://" "https://test.pypi.org/legacy/" "https://pypi.org/legacy"]
 }
 
 # Default package sources
 #
 # The default sources to use to install the package, beyond the ones defined within pyproject.toml available for the add command
-def "nu-complete poetry default-package-sources" [] nothing -> list<string> {
+def "nu-complete poetry default-package-sources" []: nothing -> list<string> {
     (nu-complete poetry default-package-source-names) | append (
         nu-complete poetry default-package-source-urls
     )
@@ -31,21 +31,21 @@ def "nu-complete poetry default-package-sources" [] nothing -> list<string> {
 # Build formats
 #
 # Used by the build command to limit the built package to either sdist or wheel
-def "nu-complete poetry build-formats" [] nothing -> list<string> {
+def "nu-complete poetry build-formats" []: nothing -> list<string> {
     [sdist wheel]
 }
 
 # Default usernames
 #
 # The current username which is the default suggestion for logging in to services with a username
-def "nu-complete poetry default-usernames" [] nothing -> list<string> {
+def "nu-complete poetry default-usernames" []: nothing -> list<string> {
     [(whoami)]
 }
 
 # Setting keys
 #
 # The available setting keys that can be retrieved/changed by the config command
-def "nu-complete poetry setting-keys" [] nothing -> list<string> {
+def "nu-complete poetry setting-keys" []: nothing -> list<string> {
     [
         cache-dir
         experimental.system-git-client
@@ -87,7 +87,7 @@ def "nu-complete poetry setting-keys" [] nothing -> list<string> {
 # Setting keys
 #
 # The possible values for the given setting key, that the config command can chenge the respective setting key to
-def "nu-complete poetry setting-values" [context: string] nothing -> list<any> {
+def "nu-complete poetry setting-values" [context: string]: nothing -> list<any> {
     let $final_context: string = ($context | str trim | split row " " | last)
 
     if (
@@ -115,12 +115,9 @@ def "nu-complete poetry setting-values" [context: string] nothing -> list<any> {
         return (
             ls | get name | where (($it | path type) == "dir") | each {|it| $it | path expand}
         ) | append (
-            if (
-                ((sys).host.name | str downcase | str ends-with "macos")
-                or ((sys).host.name | str downcase | str ends-with "osx")
-            ) {
+            if ($nu.os-info.name == "macos") {
                 $env.HOME | path join "Library/Caches/pypoetry"
-            } else if ((sys).host.name | str downcase | str ends-with "windows") {
+            } else if ($nu.os-info.name == "windows") {
                 $env.HOME | path join "AppData/Local/pypoetry/Cache"
             } else if ("XDG_CACHE_HOME" in $env) {
                 $env.XDG_CACHE_HOME | path join "pypoetry"
@@ -170,27 +167,27 @@ def "nu-complete poetry setting-values" [context: string] nothing -> list<any> {
     return {
         "installer.max-workers": [5 6 8 10 12 14 16 20 24 32 32 36 52 56 84 100 104]
         "virtualenvs.prompt": ["\"{project_name}-py{python_version}\""]
-    } | get -i $final_context
+    } | get -o $final_context
 }
 
 # Export formats
 #
 # The list of possible formats supported by the export command
-def "nu-complete poetry export-formats" [] nothing -> list<string> {
+def "nu-complete poetry export-formats" []: nothing -> list<string> {
     ["requirements.txt" "constraints.txt"]
 }
 
 # Default dependency groups
 #
 # A default selection of dependency groups
-def "nu-complete poetry default-dependency-groups" [] nothing -> list<string> {
+def "nu-complete poetry default-dependency-groups" []: nothing -> list<string> {
     [main dev deploy test testing tests development developing deployment deploying]
 }
 
 # Commands
 #
 # The list of command names available to have a help message displayed using the help command
-def "nu-complete poetry commands" [] nothing -> list<string> {
+def "nu-complete poetry commands" []: nothing -> list<string> {
     [
         about
         add
@@ -236,35 +233,35 @@ def "nu-complete poetry commands" [] nothing -> list<string> {
 # Licenses
 #
 # The available license IDs for project.toml
-def "nu-complete poetry licenses" [] nothing -> list<string> {
+def "nu-complete poetry licenses" []: nothing -> list<string> {
     http get https://spdx.org/licenses/licenses.json | get licenses | get licenseId
 }
 
 # ReadMe file formats
 #
 # A default selection of file extensions used for ReadMe files
-def "nu-complete poetry readme-file-formats" [] nothing -> list<string> {
+def "nu-complete poetry readme-file-formats" []: nothing -> list<string> {
     [md txt adoc rst rft pdf html dbk odf tex latex texi asciidoc markdown xhtml xht htm xml]
 }
 
 # Namespaces
 #
 # The list of namespaces available to list poetry commands about
-def "nu-complete poetry namespaces" [] nothing -> list<string> {
+def "nu-complete poetry namespaces" []: nothing -> list<string> {
     [cache debug env self source]
 }
 
 # Default repositories
 #
 # The default set of repositories available to publish this projects package to
-def "nu-complete poetry default-repositories" [] nothing -> list<string> {
+def "nu-complete poetry default-repositories" []: nothing -> list<string> {
     nu-complete poetry default-package-sources
 }
 
 # Default dist directories
 #
 # The default set of directories where build artifacts may be stored
-def "nu-complete poetry default-dist-directories" [] nothing -> list<string> {
+def "nu-complete poetry default-dist-directories" []: nothing -> list<string> {
     (
         ls | get name | where (($it | path type) == "dir") | each {|it| $it | path expand}
     ) | prepend ($env.PWD | path join "dist")
@@ -273,21 +270,21 @@ def "nu-complete poetry default-dist-directories" [] nothing -> list<string> {
 # Caches
 #
 # The list of available poetry caches, used to remove one that is listed
-def "nu-complete poetry caches" [] nothing -> list<string> {
+def "nu-complete poetry caches" []: nothing -> list<string> {
     poetry cache list | lines
 }
 
 # Virtual environments
 #
 # The list of available virtual environements, used to remove one that is listed
-def "nu-complete poetry virtual-environments" [] nothing -> list<string> {
+def "nu-complete poetry virtual-environments" []: nothing -> list<string> {
     poetry env list --full-path | lines | each {|| (split row " ").0}
 }
 
 # Source priorities
 #
 # Used by the source commands to set/display the priority of the source
-def "nu-complete poetry source-priorities" [] nothing -> list<string> {
+def "nu-complete poetry source-priorities" []: nothing -> list<string> {
     [default primary secondary supplemental explicit]
 }
 

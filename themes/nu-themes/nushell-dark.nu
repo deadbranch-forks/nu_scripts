@@ -1,4 +1,6 @@
-export def main [] { return {
+# Retrieve the theme settings
+export def main [] {
+  return {
     # color for nushell primitives
     separator: white
     leading_trailing_space_bg: { attr: n } # no fg, no bg, attr none effectively turns this off
@@ -16,7 +18,7 @@ export def main [] { return {
       } else { 'blue' }
     }
     duration: white
-    date: {|| (date now) - $in |
+    datetime: {|| (date now) - $in |
       if $in < 1hr {
         'purple'
       } else if $in < 6hr {
@@ -38,7 +40,7 @@ export def main [] { return {
     string: white
     nothing: white
     binary: white
-    cellpath: white
+    'cell-path': white
     row_index: green_bold
     record: white
     list: white
@@ -82,7 +84,44 @@ export def main [] { return {
     shape_variable: purple
     shape_vardecl: purple
 
-    background: dark_gray
-    foreground: default
-    cursor: red
-}}
+    background: "#767676" 
+    foreground: "#f2f2f2"
+    cursor: "#c50f1f"
+  }
+}
+
+# Update the Nushell configuration
+export def --env "set color_config" [] {
+    $env.config.color_config = (main)
+}
+
+# Update terminal colors
+export def "update terminal" [] {
+    let theme = (main)
+
+    # Set terminal colors
+    let osc_screen_foreground_color = '10;'
+    let osc_screen_background_color = '11;'
+    let osc_cursor_color = '12;'
+        
+    $"
+    (ansi -o $osc_screen_foreground_color)($theme.foreground)(char bel)
+    (ansi -o $osc_screen_background_color)($theme.background)(char bel)
+    (ansi -o $osc_cursor_color)($theme.cursor)(char bel)
+    "
+    # Line breaks above are just for source readability
+    # but create extra whitespace when activating. Collapse
+    # to one line and print with no-newline
+    | str replace --all "\n" ''
+    | print -n $"($in)\r"
+}
+
+export module activate {
+    export-env {
+        set color_config
+        update terminal
+    }
+}
+
+# Activate the theme when sourced
+use activate

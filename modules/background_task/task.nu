@@ -19,7 +19,7 @@ export def spawn [
   --after (-a): int                   # Start the task once all specified tasks have successfully finished. As soon as one of the dependencies fails, this task will fail as well.
   --priority (-o): string             # Start this task with a higher priority. The higher the number, the faster it will be processed.
   --label (-l): string                # Label the task. This string will be shown in the `status` column of `task status`.
-] -> int {
+]: nothing -> int {
   mut args = []
 
   if $working_directory != null {
@@ -52,6 +52,7 @@ export def spawn [
   (
     view source $command
     | str trim --left --char "{"
+    | str trim --left --char "|"
     | str trim --right --char "}"
   )
   | save --force $source_path
@@ -179,20 +180,20 @@ export def restart [
 #
 # A paused group won't start any new tasks automatically.
 export def pause [
-  ...ids: int  # IDs of the tasks to pause.
-  --group (-g) # Pause a specific group
-  --all (-a)   # Pause all groups.
-  --wait (-w)  # Only pause the specified group and let already running tasks finish by themselves
+  ...ids: int          # IDs of the tasks to pause.
+  --group (-g): string # Pause a specific group
+  --all (-a)           # Pause all groups.
+  --wait (-w)          # Only pause the specified group and let already running tasks finish by themselves
 ] {
   mut args = []
 
   if $group != null {
-    $args = ($args | prepend "--group")
+    $args = ($args | prepend ["--group" $group])
   }
-  if $all != null {
+  if $all {
     $args = ($args | prepend "--all")
   }
-  if $wait != null {
+  if $wait {
     $args = ($args | prepend "--wait")
   }
 
@@ -432,3 +433,11 @@ export def set-parallel-limit [
 
   pueue parallel ...$args $max
 }
+
+const HERE = (path self)
+
+export def main [] {
+  let mod_name = $HERE | path basename | str replace -r '\.nu$' ''
+  scope commands | where name =~ $"^($mod_name) " | select name description | transpose -rd
+}
+

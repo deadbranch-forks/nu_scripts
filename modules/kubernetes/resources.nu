@@ -3,7 +3,7 @@ use complete *
 ### refine kubernetes resources
 export def kube-refine [
     ...namespace: string@"nu-complete kube ns"
-    --kind(-k): list<string@"nu-complete kube kind">
+    --kind(-k): list<string>@"nu-complete kube kind"
 ] {
     use lg
     let config = $env.KUBERNETES_REFINE
@@ -16,7 +16,7 @@ export def kube-refine [
     let cns = kubectl get namespace
     | from ssv -a
     | get NAME
-    | filter $nsf
+    | where $nsf
 
     let resource = kubectl get crd | from ssv | get NAME
     let resource = kubectl api-resources | from ssv -a | get NAME | append $resource
@@ -24,7 +24,7 @@ export def kube-refine [
         $resource
     } else {
         $resource
-        | filter {|x| $x in $kind }
+        | where {|x| $x in $kind }
     }
 
     mut data = []

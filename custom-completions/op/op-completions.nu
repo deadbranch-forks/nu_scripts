@@ -109,7 +109,7 @@ export extern "op account forget" [
     --help(-h)                                              # help for forget
     --all                                                   # Forget all authenticated accounts.
 
-    account?: string: string@"nu completion account"       # The account to forget.
+    account?: string@"nu completion account"       # The account to forget.
 ]
 
 # Manage Connect server instances and tokens in your 1Password account
@@ -592,7 +592,7 @@ export extern "op document list" [
 export alias "document ls" = document list
 
 # Manage Events API integrations in your 1Password connect
-export extern "op events"-api [
+export extern "op events-api" [
     # GLOBAL FLAGS
     --account=account: string@"nu completion account"       # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID. For a list of available accounts, run 'op account list'. Can be set as the OP_ACCOUNT environment variable.
     --cache                                                 # Store and use cached information. Caching is enabled by default on UNIX-like systems. Caching is not available on Windows. Options: true, false. Can also be set with the OP_CACHE environment variable. (default true)
@@ -1979,11 +1979,11 @@ def "nu completion duration" [ctx: string] {
     if ($duration | parse --regex ".*?(\\d+)$" | is-not-empty) {
         [s m h d w] | each {|e|
             let label = match $e {
-                s => "seconds"
-                m => "minutes"
-                h => "hours"
-                d => "days"
-                w => "weeks"
+                "s" => "seconds"
+                "m" => "minutes"
+                "h" => "hours"
+                "d" => "days"
+                "w" => "weeks"
             }
             {value: $"($duration)($e)", description: $"+($duration | parse --regex '.*?(?<value>\d+)$' | last | get value | into float) ($label)"}
         }
@@ -1991,7 +1991,7 @@ def "nu completion duration" [ctx: string] {
 }
 
 def "nu completion tag" [] {
-    op item list --format json | from json | get tags -i | uniq | sort --ignore-case --natural
+    op item list --format json | from json | get tags -o | uniq | sort --ignore-case --natural
 }
 
 def "nu completion tags" [ctx: string] {
@@ -2108,15 +2108,15 @@ def "nu completion bool" [] {
 }
 
 def "nu completion account" [] {
-    op account list --format json | from json | select -i account_uuid email | rename value description | sort-by description --ignore-case --natural
+    op account list --format json | from json | select -o account_uuid email | rename value description | sort-by description --ignore-case --natural
 }
 
 def "nu completion document_item" [] {
-    op item list --format json | from json | where category == "DOCUMENT" | select -i id title | rename value description | sort-by description --ignore-case --natural
+    op item list --format json | from json | where category == "DOCUMENT" | select -o id title | rename value description | sort-by description --ignore-case --natural
 }
 
 def "nu completion item" [] {
-    op item list --format json | from json | select -i id title additional_information | rename value description
+    op item list --format json | from json | select -o id title additional_information | rename value description
     | upsert description {|row| if ($row.additional_information | is-not-empty) and $row.additional_information != '' {$"($row.description) - ($row.additional_information)"} else {$row.description} }
     | sort-by description --ignore-case --natural
     | select value description
@@ -2124,7 +2124,7 @@ def "nu completion item" [] {
 
 def parse_args_rg [] { "(?<opening_quote>['\"`]?)(?<content>.*?)(?<closing_quote>\\k<opening_quote>)(?<separator>\\s+)" }
 
-def "nu completion parse-context" [] string -> {cmd: string, args: list<string>} {
+def "nu completion parse-context" []: string -> record {
     # context strings starts at cursor position
     let ctx = $in + ' ' # add space to end to ensure last part is parsed🙄
     mut parse = $ctx | parse --regex (parse_args_rg)
@@ -2177,7 +2177,7 @@ def "nu completion parse-context" [] string -> {cmd: string, args: list<string>}
 def "nu completion output" [
         ctx: string,    # entered command [sub command, args, + options]
         --complete (-c) # if the copletion should have a closing quote and terminating space
-    ] list<string> -> list<string>, string -> list<string> {
+    ]: list<string> -> list<string>, string -> list<string> {
 
         let output = $in
         let parse = $ctx + ` `

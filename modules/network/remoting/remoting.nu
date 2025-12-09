@@ -22,9 +22,9 @@ def "nu-complete hosts" [] {
 }
 
 def "nu-complete scripts" [] {
-  $nu.scope.commands
+  scope commands
   |where is_custom
-  |get -i command
+  |get -o command
 }
 
 # Returns ssh connection as url to be consumed by original ssh command
@@ -43,7 +43,7 @@ export def ssh [
     hostname: string@"nu-complete hosts"                 # name of the host you want to connect to
     ...args                                                 # commands you wish to run on the host
 ] {
-    let host = (hosts|where name == $hostname|get -i 0)
+    let host = (hosts|where name == $hostname|get -o 0)
     if ($host.nu) {
         if ($args|length) > 0 {
             ^ssh (get-url $host) (build-string ($args|str join ' ') '|to json -r')|from json
@@ -62,7 +62,7 @@ export def "ssh script" [
   ...args                                                       # arguments you wish to pass to the script in key=value format
 ] {
     let span = (metadata $script).span
-    if $script in ($nu.scope.commands|where is_custom|get command) {
+    if $script in (scope commands|where is_custom|get command) {
 
         let host = (hosts|where name == $hostname|get 0)
         let full_command = (build-string (view-source $script) '; ' $script ' ' ($args|str join ' ') '|to json -r')

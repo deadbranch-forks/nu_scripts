@@ -7,7 +7,7 @@ export def 'from tree' [
     let argv = $ctx.0
         | str substring 0..$ctx.1
         | split row -r '\s+'
-        | range $cmd_len..
+        | slice $cmd_len..
         | where not ($it | str starts-with '-')
     let menu = $argv
         | reduce -f {schema: $schema, path: []} {|x, acc|
@@ -16,19 +16,19 @@ export def 'from tree' [
                 $acc
             } else {
                 match ($acc.schema | describe -d | get type) {
-                    record => {
+                    "record" => {
                         if $x in $acc.schema {
                             $acc | merge { schema: ($acc.schema | get $x) }
                         } else {
                             $acc
                         }
                     }
-                    list => {
+                    "list" => {
                         let fst = $acc.schema.0? | describe -d | get type
                         if not ($fst in ['list', 'record'])  {
                             $acc
                         } else {
-                            let r = $acc.schema | filter {|i| ($i | get $selector.value) == $x}
+                            let r = $acc.schema | where {|i| ($i | get $selector.value) == $x}
                             if ($r | is-empty) {
                                 $acc
                             } else {
@@ -50,7 +50,7 @@ export def 'from tree' [
             }
         }
     match ($menu.schema | describe -d | get type) {
-        record => {
+        "record" => {
             $menu.schema
             | transpose k v
             | each {|i|
@@ -61,7 +61,7 @@ export def 'from tree' [
                 }
             }
         }
-        list => {
+        "list" => {
             if ($menu.schema.0? | describe -d | get type) == 'record' {
                 $menu.schema
                 | each {|x| {$selector.value: null, $selector.description: null} | merge $x }

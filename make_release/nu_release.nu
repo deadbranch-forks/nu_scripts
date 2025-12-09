@@ -3,13 +3,15 @@ use std log
 export def main [] {
     let subcrates_wave_1 = [
         nu-glob,
-        nu-json,
         nu-path,
         nu-pretty-hex,
         nu-system,
         nu-utils,
         nu-term-grid,
         nu-test-support,
+        nu-json,
+        nu-derive-value,
+        nu-experimental,
         nu-protocol,
         nu-engine,
         nu-plugin-protocol,
@@ -37,6 +39,7 @@ export def main [] {
         nu-cli,
         nu-cmd-extra,
         nu-lsp,
+        nu-mcp,
 
         nu_plugin_query,
         nu_plugin_inc,
